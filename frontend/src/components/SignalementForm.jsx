@@ -11,22 +11,15 @@ const SignalementForm = ({ onAjout }) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
- const handleSubmit = (e) => {
-   e.preventDefault();
-   if (!form.type || !form.description || !form.localisation) {
-     alert("Tous les champs sont obligatoires !");
-     return;
-   }
-
-   // On envoie explicitement le statut initial
-   const nouveauSignalement = {
-     ...form,
-     statut: "EN_COURS"
-   };
-
-   onAjout(nouveauSignalement);
-   setForm({ type: '', description: '', localisation: '' });
- };
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!form.type || !form.description || !form.localisation) {
+      alert("Tous les champs sont obligatoires !")
+      return
+    }
+    onAjout(form)
+    setForm({ type: '', description: '', localisation: '' })
+  }
 
   return (
     <div className="card shadow">

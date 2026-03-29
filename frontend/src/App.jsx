@@ -1,51 +1,54 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import SignalementForm from './components/SignalementForm'
-import SignalementList from './components/SignalementList'
+import Login from './components/Login'
+import UserDashboard from './components/UserDashboard'
+import AdminDashboard from './components/AdminDashboard'
 
-const API_URL = 'http://localhost:8080/api/signalements'
+const API_URL = 'http://localhost:8080/api'
 
 function App() {
-  const [signalements, setSignalements] = useState([])   // Liste qui s'actualise automatiquement
+  const [token, setToken] = useState(sessionStorage.getItem('token'))
+  const [role, setRole] = useState(sessionStorage.getItem('role'))
+  const [userName, setUserName] = useState(sessionStorage.getItem('userName'))
 
-  // Charger la liste dès le démarrage
-  useEffect(() => {
-    fetchSignalements()
-  }, [])
-
-  const fetchSignalements = async () => {
-    const response = await axios.get(API_URL)
-    setSignalements(response.data)
+  const handleLogin = (data) => {
+    sessionStorage.setItem('token', data.token)
+    sessionStorage.setItem('role', data.role)
+    sessionStorage.setItem('userName', `${data.prenom} ${data.nom}`)
+    setToken(data.token)
+    setRole(data.role)
+    setUserName(`${data.prenom} ${data.nom}`)
   }
 
-  const ajouterSignalement = async (nouveau) => {
-    const response = await axios.post(API_URL, nouveau)
-    setSignalements([...signalements, response.data])   // Ajoute immédiatement à l'écran
+  const handleLogout = () => {
+    sessionStorage.clear()
+    setToken(null)
+    setRole(null)
+    setUserName(null)
   }
 
-  const changerStatut = async (id, nouveauStatut) => {
-    await axios.put(`${API_URL}/${id}/statut`, nouveauStatut)
-    fetchSignalements()   // Rafraîchit la liste
+  // L'application démarre toujours sur le login
+  if (!token) {
+    return <Login onLogin={handleLogin} />
   }
 
   return (
-    <div className="container mt-5">
-      <h1 className="text-center mb-4 text-success">
-        🌍 Campus Éco-Responsable & IA
-      </h1>
-
-      <div className="row">
-        <div className="col-md-5">
-          <SignalementForm onAjout={ajouterSignalement} />
-        </div>
-
-        <div className="col-md-7">
-          <SignalementList
-            signalements={signalements}
-            onStatutChange={changerStatut}
-          />
+    <div className="container mt-4">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1 className="text-success">🌍 Campus Éco-Responsable & IA</h1>
+        <div>
+          <span className="me-3">👤 {userName} ({role})</span>
+          <button className="btn btn-outline-danger btn-sm" onClick={handleLogout}>
+            Déconnexion
+          </button>
         </div>
       </div>
+
+      {role === 'USER' ? (
+        <UserDashboard token={token} />
+      ) : (
+        <AdminDashboard token={token} />
+      )}
     </div>
   )
 }

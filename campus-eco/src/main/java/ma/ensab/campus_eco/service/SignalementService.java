@@ -1,54 +1,67 @@
 package ma.ensab.campus_eco.service;
 
+import ma.ensab.campus_eco.dto.SignalementDTO;
+import ma.ensab.campus_eco.dto.SignalementRequestDTO;
+import ma.ensab.campus_eco.mapper.SignalementMapper;
 import ma.ensab.campus_eco.model.Signalement;
+import ma.ensab.campus_eco.model.User;
 import ma.ensab.campus_eco.repository.SignalementRepository;
 import org.springframework.stereotype.Service;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class SignalementService {
 
     private final SignalementRepository repository;
+    private final SignalementMapper mapper;
 
-    public SignalementService(SignalementRepository repository) {
+    public SignalementService(SignalementRepository repository, SignalementMapper mapper) {
         this.repository = repository;
+        this.mapper = mapper;
     }
 
-    public Signalement creerSignalement(Signalement signalement) {
-        // Force toujours le statut initial à EN_COURS (règle métier)
-        signalement.setStatut(Signalement.Statut.EN_COURS);
+    public SignalementDTO creerSignalement(SignalementRequestDTO request, User user) {
+        Signalement entity = mapper.toEntity(request);
 
-        signalement.setSuggestionEco(genererSuggestion(signalement.getType()));
-        signalement.setDateCreation(LocalDateTime.now());
-        return repository.save(signalement);
+        // Force toujours NOUVEAU au moment de la création
+        entity.setStatut(Signalement.Statut.NOUVEAU);
+        entity.setUser(user);
+        entity.setSuggestionEco(genererSuggestion(request.getType()));
+
+        Signalement saved = repository.save(entity);
+        return mapper.toDto(saved);
     }
 
-    public List<Signalement> getAllSignalements() {
-        return repository.findAll();
+    public List<SignalementDTO> getSignalementsByUser(User user) {
+        return repository.findByUser(user).stream()
+                .map(mapper::toDto)
+                .toList();
     }
 
-    public Signalement changerStatut(Long id, Signalement.Statut nouveauStatut) {
-        Signalement s = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Signalement non trouvé avec l'id : " + id));
-        s.setStatut(nouveauStatut);
-        return repository.save(s);
+    public List<SignalementDTO> getAllSignalements() {
+        return repository.findAll().stream()
+                .map(mapper::toDto)
+                .toList();
+    }
+
+    public SignalementDTO changerStatut(Long id, String nouveauStatut) {
+        Signalement entity = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Signalement non trouvé"));
+
+        mapper.updateStatut(entity, nouveauStatut);
+        Signalement saved = repository.save(entity);
+        return mapper.toDto(saved);
     }
 
     private String genererSuggestion(String type) {
-        if (type == null) return "Vérifiez le problème et signalez-le à l'administration.";
+        if (type == null) return "Vérifiez le problème...";
 
         return switch (type.toLowerCase()) {
-            case "gaspillage d'énergie", "énergie" ->
-                    "Éteignez les lumières et les appareils inutiles. Pensez à installer des détecteurs de présence.";
-            case "fuite d'eau", "eau" ->
-                    "Fermez le robinet principal si possible et contactez immédiatement la maintenance.";
-            case "salle inutilisée éclairée", "éclairage" ->
-                    "Éteignez les lumières en sortant. Proposition : installer des minuteurs ou détecteurs.";
-            case "déchet", "poubelle" ->
-                    "Triez vos déchets ! Le campus vise le zéro déchet plastique d'ici 2027.";
-            default ->
-                    "Merci pour votre signalement ! Votre action contribue à rendre le campus plus éco-responsable.";
+            case "gaspillage d'énergie", "énergie" -> "Éteignez les lumières...";
+            case "fuite d'eau", "eau" -> "Fermez le robinet...";
+            case "salle inutilisée éclairée", "éclairage" -> "Éteignez les lumières en sortant...";
+            case "déchet", "poubelle" -> "Triez vos déchets !";
+            default -> "Merci pour votre signalement !";
         };
     }
 }

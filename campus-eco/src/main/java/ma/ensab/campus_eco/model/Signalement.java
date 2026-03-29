@@ -22,13 +22,18 @@ public class Signalement {
     private String localisation;
 
     @Enumerated(EnumType.STRING)
-    private Statut statut = Statut.EN_COURS;
+    private Statut statut = Statut.NOUVEAU;   // ← Nouveau par défaut
 
     private LocalDateTime dateCreation = LocalDateTime.now();
 
     private String suggestionEco;
 
     public enum Statut {
-        EN_COURS, TRAITE
+        NOUVEAU, EN_COURS, TRAITE
     }
+
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = true)   // ← temporairement true pour tester
+    private User user;
+
 }

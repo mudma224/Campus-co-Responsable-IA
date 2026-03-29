@@ -9,5 +9,5 @@ public class CampusEcoResponsableApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(CampusEcoResponsableApplication.class, args);
 	}
-
+;
 }
